@@ -1,0 +1,303 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0f1a;
+  color: #e2e8f0;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+body.light {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+/* ── Cosmic Particles ── */
+.particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: 
+    radial-gradient(circle at 10% 15%, rgba(34,197,94,0.07) 0%, transparent 30%),
+    radial-gradient(circle at 90% 80%, rgba(34,197,94,0.05) 0%, transparent 40%);
+}
+
+.particles::before,
+.particles::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  animation: drift 90s linear infinite;
+}
+
+.particles::before {
+  background-image: 
+    radial-gradient(1.5px 1.5px at 20% 30%, #ffffff44 50%, transparent),
+    radial-gradient(1.2px 1.2px at 50% 60%, #22c55e33 50%, transparent),
+    radial-gradient(2px 2px at 80% 75%, #ffffff22 50%, transparent);
+  animation-duration: 70s;
+}
+
+.particles::after {
+  background-image: 
+    radial-gradient(1.8px 1.8px at 30% 70%, #22c55e44 50%, transparent),
+    radial-gradient(1px 1px at 65% 25%, #ffffff33 50%, transparent);
+  animation-duration: 110s;
+  animation-direction: reverse;
+}
+
+@keyframes drift {
+  from { transform: translateY(-25%) scale(1.05); opacity: 0.65; }
+  to   { transform: translateY(120%) scale(0.92); opacity: 0.25; }
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  height: 64px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(148,163,184,0.15);
+  background: rgba(10,15,26,0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.light .top-bar {
+  background: rgba(248,250,252,0.7);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.logo {
+  font-weight: 600;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+#themeToggle {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+#themeToggle:hover {
+  transform: scale(1.15);
+}
+
+/* ── Main & Hero ── */
+.main {
+  height: calc(100vh - 220px);           /* Increased space for bottom area */
+  overflow-y: auto;
+  padding: 20px 16px 140px 16px;         /* Extra bottom padding so last messages are visible */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero {
+  text-align: center;
+  margin: 60px 0 40px;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, #22c55e, #86efac);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  font-size: 1rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+body.light .hero p {
+  color: #64748b;
+}
+
+/* ── Chat Messages ── */
+.chat {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 120px;                 /* Ensures messages don't hide behind input */
+}
+
+.msg {
+  padding: 12px 16px;
+  border-radius: 18px;
+  max-width: 82%;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  animation: fadeInUp 0.35s ease-out;
+  transition: all 0.3s ease;
+}
+
+.user {
+  align-self: flex-end;
+  background: rgba(30,41,59,0.75);
+  border: 1px solid #334155;
+  backdrop-filter: blur(6px);
+}
+
+.ai {
+  align-self: flex-start;
+  background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(22,163,74,0.15));
+  border: 1px solid rgba(34,197,94,0.3);
+  box-shadow: 0 4px 24px rgba(34,197,94,0.18);
+}
+
+body.light .user {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+body.light .ai {
+  background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(22,163,74,0.08));
+  color: #0f172a;
+  border-color: rgba(34,197,94,0.25);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Typing Indicator ── */
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+}
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing span:nth-child(1) { animation-delay: -0.32s; }
+.typing span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* ── Input Area ── */
+.bottom-area {
+  position: sticky;
+  bottom: 0;
+  padding: 24px 20px 40px 20px;           /* ← More bottom space → text always visible */
+  background: rgba(10,15,26,0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10;
+}
+
+body.light .bottom-area {
+  background: rgba(248,250,252,0.9);
+}
+
+.input-wrapper {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.7);
+  border: 1px solid rgba(34,197,94,0.3);
+  box-shadow: 
+    0 16px 48px rgba(0,0,0,0.45),
+    0 6px 24px rgba(34,197,94,0.15);     /* Floating/lifted effect */
+  transition: all 0.3s ease;
+}
+
+body.light .input-wrapper {
+  background: white;
+  border: 1px solid #cbd5e1;
+  box-shadow: 
+    0 16px 48px rgba(0,0,0,0.12),
+    0 6px 24px rgba(0,0,0,0.06);
+}
+
+.input-wrapper:focus-within {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.25);
+}
+
+input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+
+input::placeholder {
+  color: #64748b;
+}
+
+#sendBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #22c55e;
+  color: black;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+#sendBtn:hover {
+  transform: scale(1.12);
+  background: #16a34a;
+}
+
+#sendBtn:active {
+  transform: scale(0.96);
+}
+
+/* ── Powered by ── */
+.powered {
+  margin-top: 0px;                      /* More breathing room */
+  text-align: center;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  opacity: 0.9;
+  padding-bottom: 10px;
+margin-bottom: -40px;
+padding: 20px;
+}
+
+body.light .powered {
+  color: #64748b;
+  opacity: 1;
+}

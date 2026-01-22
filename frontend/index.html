@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAMTECH AI - Download Songs Fast from Lilongwe</title>
+  <meta name="description" content="Free AI-powered YouTube song downloader. Just say the song name, artist, or paste a link — get it instantly as MP3. Built in Lilongwe, Malawi." />
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn, etc.) -->
+  <meta property="og:title" content="RAMTECH AI - Your Music Plug 🔥" />
+  <meta property="og:description" content="Ask for any song or YouTube link — I download it for you instantly as MP3! Made with love in Lilongwe, Malawi. 🎧" />
+  <meta property="og:image" content="https://ramtech-ai.netlify.app/og-image.jpg" /> <!-- Replace with real 1200x630 image later -->
+  <meta property="og:url" content="https://ramtech-ai.netlify.app" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="RAMTECH AI" />
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="RAMTECH AI - Download Songs Fast" />
+  <meta name="twitter:description" content="AI music downloader from Lilongwe. Say the song name — get it instantly! 🎵" />
+  <meta name="twitter:image" content="https://ramtech-ai.netlify.app/og-image.jpg" />
+
+  <!-- Favicon (add real one later) -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Your CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="dark">
+  <!-- Background atmosphere -->
+  <div class="particles"></div>
+
+  <!-- Top bar -->
+  <header class="top-bar">
+    <div class="logo">🎧 RAMTECH AI</div>
+    <button id="themeToggle" aria-label="Toggle theme">🌙</button>
+  </header>
+
+  <!-- Main content area -->
+  <main class="main">
+    <!-- Hero (shown only at start) -->
+    <section id="hero" class="hero">
+      <h1>RAMTECH AI</h1>
+      <p>Just say the song name or paste a YouTube link.<br>We'll handle the rest.</p>
+    </section>
+
+    <!-- Chat messages -->
+    <div id="chat" class="chat"></div>
+  </main>
+
+  <!-- Bottom input area -->
+  <div class="bottom-area">
+    <div class="input-wrapper">
+      <input
+        id="userInput"
+        placeholder="Ask for a song, artist, or YouTube link…"
+        autocomplete="off"
+      />
+      <button id="sendBtn" aria-label="Send message">➤</button>
+    </div>
+    <div class="powered">
+      Powered by <a href="https://ram-tech.netlify.app"><strong>RAMTECH</strong></a>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

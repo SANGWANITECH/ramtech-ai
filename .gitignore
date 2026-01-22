@@ -1,0 +1,30 @@
+# Node.js / npm
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Downloads folder (where songs save — don't commit these!)
+downloads/
+*.mp3
+*.webm
+*.mp4
+
+# Environment variables / secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
