@@ -54,7 +54,7 @@ async function sendMessage() {
   let hadSuccess = false;
 
   try {
-    const response = await fetch('http://localhost:3000/api/download', {
+    const response = await fetch('https://ramtech-ai-backend.onrender.com/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text })
@@ -78,12 +78,12 @@ async function sendMessage() {
           removeTyping(typingEl);
           clearTimeout(timeoutId);
 
-          // If we get success or download → mark it and ignore previous errors
+          // Track success to ignore temporary errors
           if (data.status === 'success' || data.downloadUrl) {
             hadSuccess = true;
           }
 
-          // Only show error if no success follows
+          // Show error only if no success followed
           if (data.status === 'error' && !hadSuccess) {
             addMessage(data.message || 'Hmm, something went wrong 😅 Try again?', 'ai');
           } else if (data.message && data.status !== 'error') {
@@ -91,7 +91,7 @@ async function sendMessage() {
           }
 
           if (data.downloadUrl) {
-            const fullUrl = new URL(data.downloadUrl, 'http://localhost:3000').href;
+            const fullUrl = new URL(data.downloadUrl, 'https://ramtech-ai-backend.onrender.com').href;
             const songName = data.fileName || 'the song';
 
             // Auto-trigger download
