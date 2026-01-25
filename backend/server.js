@@ -7,53 +7,57 @@ const fs = require('fs').promises;
 const Groq = require('groq-sdk');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Groq setup - key comes from environment variable (secure for deployment)
+// ===== yt-dlp PATH (LOCAL + RENDER SAFE) =====
+const YTDLP_PATH = path.join(__dirname, 'yt-dlp');
+
+// ===== Groq setup =====
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || 'put-your-local-test-key-here-if-needed'
+  apiKey: process.env.GROQ_API_KEY || 'put-your-local-test-key-here'
 });
 
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
-// Rate limit increased for testing (change back to 5 when live)
+// ===== Rate Limiting =====
 const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+  windowMs: 5 * 60 * 1000,
   max: 20,
-  message: { error: 'Too many requests, please wait a minute 😅' }
+  message: { error: 'Too many requests, slow down 😅' }
 });
 app.use('/api/', limiter);
 
+// ===== Downloads Directory =====
 const DOWNLOAD_DIR = path.join(__dirname, 'downloads');
 
-// Create downloads folder async at startup
 (async () => {
   try {
     await fs.access(DOWNLOAD_DIR);
   } catch {
     await fs.mkdir(DOWNLOAD_DIR, { recursive: true });
-    console.log(`Created downloads directory: ${DOWNLOAD_DIR}`);
+    console.log('Downloads folder created');
   }
 })();
 
-// Delayed cleanup (60 seconds – safe)
+// ===== Auto Cleanup =====
 function delayedCleanup(filePath) {
   setTimeout(async () => {
     try {
       await fs.unlink(filePath);
-      console.log(`Delayed cleanup: ${filePath}`);
-    } catch (err) {
-      if (err.code !== 'ENOENT') console.error(`Cleanup failed: ${err}`);
-    }
-  }, 60000);
+      console.log('Deleted:', filePath);
+    } catch {}
+  }, 60_000);
 }
 
-app.get('/', (req, res) => res.send('RAMTECH AI Backend running 🚀'));
+// ===== Root =====
+app.get('/', (req, res) => {
+  res.send('RAMTECH AI Backend Running 🚀');
+});
 
+// ===== File Download =====
 app.get('/api/file/:filename', async (req, res) => {
-  const fileName = req.params.filename;
-  const filePath = path.join(DOWNLOAD_DIR, fileName);
+  const filePath = path.join(DOWNLOAD_DIR, req.params.filename);
 
   try {
     await fs.access(filePath);
@@ -61,217 +65,138 @@ app.get('/api/file/:filename', async (req, res) => {
     return res.status(404).json({ error: 'File not found' });
   }
 
-  res.download(filePath, fileName, (err) => {
-    if (err) {
-      console.error('Send error:', err);
-      res.status(500).json({ error: 'Failed to send file' });
-    } else {
-      delayedCleanup(filePath);
-    }
+  res.download(filePath, err => {
+    if (!err) delayedCleanup(filePath);
   });
 });
 
-// Main chat endpoint
+// ===== Main AI + Download Endpoint =====
 app.post('/api/download', async (req, res) => {
   const { message } = req.body;
-
-  if (!message || message.trim().length < 1 || message.length > 300) {
+  if (!message || message.length > 300) {
     return res.status(400).json({ error: 'Invalid message' });
   }
-
-  const userMessage = message.trim();
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  res.write(`data: ${JSON.stringify({ status: 'processing', message: '⏳ Thinking...' })}\n\n`);
+  res.write(`data: ${JSON.stringify({ status: 'thinking', message: 'Thinking... 🤔' })}\n\n`);
 
-  // Groq with timeout
+  // ===== Ask Groq =====
   let aiResult;
   try {
-    const completionPromise = groq.chat.completions.create({
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: `You are RAMTECH AI, a super friendly music downloader under ramtech company.
-Respond ONLY with valid JSON, nothing else. Use this format:
-If the user is asking for a song (name, artist, link, "download ...", "get me ...", "play ..."):
-{ "action": "download", "songQuery": "the exact song name, artist, or link they want" }
-For chit-chat (greetings, thanks, bye, questions about you, help):
-{ "action": "reply", "message": "short, fun, friendly reply" }
-If unclear: { "action": "reply", "message": "ask for clarification politely" }
-Keep replies fun, short, and with emojis 😏`
+          content: `
+You are RAMTECH AI, a friendly music downloader.
+Respond ONLY in JSON.
+
+If user wants a song:
+{ "action": "download", "songQuery": "song name or link" }
+
+If chat:
+{ "action": "reply", "message": "short friendly reply" }
+`
         },
-        { role: 'user', content: userMessage }
-      ],
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      max_tokens: 150,
-      response_format: { type: 'json_object' }
+        { role: 'user', content: message }
+      ]
     });
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Groq timeout')), 15000)
-    );
-
-    const completion = await Promise.race([completionPromise, timeoutPromise]);
     aiResult = JSON.parse(completion.choices[0].message.content);
-  } catch (groqErr) {
-    console.error('Groq API error:', groqErr);
-    res.write(`data: ${JSON.stringify({ status: 'error', message: 'Hmm, my brain lagged 😅 Try again?' })}\n\n`);
-    res.flushHeaders();
-    res.end();
-    return;
+  } catch (err) {
+    res.write(`data: ${JSON.stringify({ status: 'error', message: 'AI error 😕' })}\n\n`);
+    return res.end();
   }
 
-  // Handle reply
-  if (aiResult.action === 'reply' && aiResult.message) {
+  // ===== Chat Reply =====
+  if (aiResult.action === 'reply') {
     res.write(`data: ${JSON.stringify({ status: 'reply', message: aiResult.message })}\n\n`);
-    res.flushHeaders();
-    res.end();
-    return;
+    return res.end();
   }
 
-  // Handle download
-  if (aiResult.action === 'download' && aiResult.songQuery) {
-    const queryToUse = aiResult.songQuery.trim();
-    const isUrl = /^https?:\/\//i.test(queryToUse);
-    const searchPrefix = isUrl ? '' : 'ytsearch1:';
-    const safeQuery = queryToUse.replace(/"/g, '\\"');
+  // ===== Download Flow =====
+  if (aiResult.action === 'download') {
+    const query = aiResult.songQuery.trim();
+    const isUrl = /^https?:\/\//i.test(query);
+    const search = isUrl ? query : `ytsearch1:${query}`;
 
-    try {
-      const cmdArgs = [
-        '--force-overwrites',
-        '--no-playlist',
-        '-x', '--audio-format', 'mp3',
-        '--audio-quality', '5',
-        '--restrict-filenames',
-        '--retries', '5',
-        '--fragment-retries', '5',
-        '--no-continue',
-        '--abort-on-error',
-        '--no-check-certificate',
-        '--verbose',
-        '-o', `${path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')}`,
-        `${searchPrefix}${safeQuery}`
-      ];
+    console.log('Using yt-dlp at:', YTDLP_PATH);
 
-      console.log('Spawning yt-dlp with args:', cmdArgs);
+    const args = [
+      '-x',
+      '--audio-format', 'mp3',
+      '--audio-quality', '5',
+      '--no-playlist',
+      '--restrict-filenames',
+      '-o', `${DOWNLOAD_DIR}/%(title)s.%(ext)s`,
+      search
+    ];
 
-      const ytProcess = spawn('/usr/local/bin/yt-dlp', cmdArgs);
+    const yt = spawn(YTDLP_PATH, args);
 
-      let stdoutData = '';
-      ytProcess.stdout.on('data', (data) => {
-        stdoutData += data.toString();
-        console.log('yt-dlp stdout:', data.toString().trim());
-      });
+    let output = '';
 
-      ytProcess.stderr.on('data', (data) => {
-        console.log('yt-dlp stderr:', data.toString().trim());
-      });
+    yt.stdout.on('data', d => output += d.toString());
+    yt.stderr.on('data', d => console.log(d.toString()));
 
-      ytProcess.on('close', (code) => {
-        console.log(`yt-dlp exited with code ${code}`);
+    yt.on('close', async code => {
+      if (code !== 0) {
+        res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download failed 😔' })}\n\n`);
+        return res.end();
+      }
 
-        if (code !== 0) {
-          res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download failed 😔 Try again?' })}\n\n`);
-          res.flushHeaders();
-          res.end();
-          return;
-        }
+      const match = output.match(/Destination: (.+\.mp3)/);
+      if (!match) {
+        res.write(`data: ${JSON.stringify({ status: 'error', message: 'File not found 😕' })}\n\n`);
+        return res.end();
+      }
 
-        let filePath = null;
+      const filePath = match[1];
+      const fileName = path.basename(filePath);
+      const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 
-        const extractMatch = stdoutData.match(/\[ExtractAudio\] Destination: (.+)/i);
-        if (extractMatch) {
-          filePath = extractMatch[1].trim();
-        } else {
-          const allDestinations = [...stdoutData.matchAll(/Destination: (.+\.mp3)/gi)];
-          if (allDestinations.length > 0) {
-            filePath = allDestinations[allDestinations.length - 1][1].trim();
-          }
-        }
+      res.write(`data: ${JSON.stringify({
+        status: 'success',
+        message: 'Song ready 🎧',
+        downloadUrl: `${baseUrl}/api/file/${encodeURIComponent(fileName)}`
+      })}\n\n`);
 
-        if (!filePath && stdoutData.includes('has already been downloaded')) {
-          const titleMatch = stdoutData.match(/Downloading item.*\n\[youtube\].*?: (.+)/i);
-          if (titleMatch) {
-            const title = titleMatch[1].trim().replace(/[^a-zA-Z0-9 -]/g, '_');
-            filePath = path.join(DOWNLOAD_DIR, `${title}.mp3`);
-            console.log('Reconstructed existing file:', filePath);
-          }
-        }
-
-        if (!filePath) {
-          console.log('Full yt-dlp output:\n', stdoutData);
-          res.write(`data: ${JSON.stringify({ status: 'error', message: 'Could not find the file 😕' })}\n\n`);
-          res.flushHeaders();
-          res.end();
-          return;
-        }
-
-        fs.access(filePath).then(() => {
-          const fileName = path.basename(filePath);
-          const downloadUrl = `http://localhost:${PORT}/api/file/${encodeURIComponent(fileName)}`;
-
-          res.write(`data: ${JSON.stringify({
-            status: 'success',
-            message: `Song ready! Downloading "${fileName}"... 🎧`,
-            downloadUrl,
-            fileName
-          })}\n\n`);
-
-          // Final done signal + flush to close stream cleanly
-          setTimeout(() => {
-            res.write(`data: ${JSON.stringify({ status: 'done', message: 'All good! Enjoy the vibes 🔥' })}\n\n`);
-            res.flushHeaders();
-            res.end();
-          }, 1000);
-
-        }).catch(() => {
-          res.write(`data: ${JSON.stringify({ status: 'error', message: 'File ready but not found on disk 😔' })}\n\n`);
-          res.flushHeaders();
-          res.end();
-        });
-      });
-
-      ytProcess.on('error', (err) => {
-        console.error('Spawn error:', err);
-        res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download tool error 😅' })}\n\n`);
-        res.flushHeaders();
-        res.end();
-      });
-
-    } catch (err) {
-      console.error('Outer download error:', err);
-      res.write(`data: ${JSON.stringify({ status: 'error', message: 'Something went wrong 😅' })}\n\n`);
-      res.flushHeaders();
       res.end();
-    }
+    });
+
+    yt.on('error', err => {
+      console.error(err);
+      res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download tool error 😅' })}\n\n`);
+      res.end();
+    });
+
   } else {
-    res.write(`data: ${JSON.stringify({ status: 'error', message: 'Hmm, not sure what you mean. Want a song? 😏' })}\n\n`);
-    res.flushHeaders();
+    res.write(`data: ${JSON.stringify({ status: 'reply', message: 'Say a song name 🎶' })}\n\n`);
     res.end();
   }
 });
 
-// Orphan cleanup every 5 minutes
+// ===== Cleanup Old Files =====
 setInterval(async () => {
   try {
     const files = await fs.readdir(DOWNLOAD_DIR);
-    for (const file of files) {
-      const fp = path.join(DOWNLOAD_DIR, file);
+    for (const f of files) {
+      const fp = path.join(DOWNLOAD_DIR, f);
       const stat = await fs.stat(fp);
       if (Date.now() - stat.mtimeMs > 15 * 60 * 1000) {
         await fs.unlink(fp);
-        console.log(`Orphan cleanup: ${fp}`);
       }
     }
-  } catch (err) {
-    console.error('Interval cleanup error:', err);
-  }
+  } catch {}
 }, 5 * 60 * 1000);
 
+// ===== Start Server =====
 app.listen(PORT, () => {
-  console.log(`RAMTECH AI Backend running on http://localhost:${PORT}`);
+  console.log(`RAMTECH AI running on port ${PORT}`);
 });
