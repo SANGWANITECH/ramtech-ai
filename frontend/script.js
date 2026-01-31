@@ -45,11 +45,11 @@ async function sendMessage() {
 
   const typingEl = showTyping();
 
-  // Timeout if nothing happens (20 seconds)
+  // Timeout 60s for Render wake-up + Groq + yt-dlp
   const timeoutId = setTimeout(() => {
     removeTyping(typingEl);
     addMessage('Hmm, taking too long... Try again? 😅', 'ai');
-  }, 20000);
+  }, 60000);
 
   let hadSuccess = false;
 
@@ -78,12 +78,10 @@ async function sendMessage() {
           removeTyping(typingEl);
           clearTimeout(timeoutId);
 
-          // Track success to ignore temporary errors
           if (data.status === 'success' || data.downloadUrl) {
             hadSuccess = true;
           }
 
-          // Show error only if no success followed
           if (data.status === 'error' && !hadSuccess) {
             addMessage(data.message || 'Hmm, something went wrong 😅 Try again?', 'ai');
           } else if (data.message && data.status !== 'error') {
@@ -94,7 +92,6 @@ async function sendMessage() {
             const fullUrl = new URL(data.downloadUrl, 'https://ramtech-ai-backend.onrender.com').href;
             const songName = data.fileName || 'the song';
 
-            // Auto-trigger download
             const link = document.createElement('a');
             link.href = fullUrl;
             link.download = songName;
@@ -102,7 +99,6 @@ async function sendMessage() {
             link.click();
             document.body.removeChild(link);
 
-            // Success confirmation
             setTimeout(() => {
               addMessage(`Download successful! 🎉 "${songName}" saved to your Downloads folder 🔥`, 'ai');
             }, 1500);
@@ -113,7 +109,6 @@ async function sendMessage() {
   } catch (err) {
     clearTimeout(timeoutId);
     removeTyping(typingEl);
-    // Only show error if no success was received
     if (!hadSuccess) {
       addMessage('Error connecting – check backend? 😔', 'ai');
     }
