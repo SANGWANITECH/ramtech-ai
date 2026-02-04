@@ -28,3 +28,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# Binaries & large files
+backend/ffmpeg*
+backend/ffmpeg-*
+backend/*.tar.xz
