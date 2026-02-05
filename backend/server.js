@@ -124,6 +124,7 @@ If chat:
     const search = isUrl ? query : `ytsearch1:${query}`;
 
     const args = [
+      '--cookies', 'cookies.txt',  
       '-x', '--audio-format', 'mp3',
       '--audio-quality', '5',
       '--no-playlist',
@@ -138,7 +139,7 @@ If chat:
     try {
       await fs.access(path.join(__dirname, 'yt-dlp'));
       console.log('yt-dlp binary found in project root!');
-      // Check if it's executable (mode 755 or similar)
+      // Check file mode (should be 100755 or similar for executable)
       const stats = await fs.stat(path.join(__dirname, 'yt-dlp'));
       console.log('yt-dlp file mode:', stats.mode.toString(8));
     } catch (err) {
