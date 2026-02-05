@@ -128,6 +128,10 @@ If chat:
       '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
       '--referer', 'https://www.youtube.com/',
       '--add-header', 'Accept-Language: en-US,en;q=0.9',
+      '--extractor-args', 'youtube:player_client=web_safari,ios',  // Safari/iOS client spoof — helped many bypass bot check
+      '--sleep-requests', '1',  // random sleep between requests
+      '--sleep-interval', '3',  // longer pause
+      '--force-ipv6',  // try IPv6 if Render supports (some clouds have less flagged IPv6)
       '-x', '--audio-format', 'mp3',
       '--audio-quality', '5',
       '--no-playlist',
