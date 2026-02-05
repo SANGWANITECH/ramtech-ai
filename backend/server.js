@@ -79,6 +79,7 @@ app.post('/api/download', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+
   res.write(`data: ${JSON.stringify({ status: 'thinking', message: 'Thinking... 🤔' })}\n\n`);
 
   let aiResult;
@@ -101,7 +102,6 @@ If chat:
       max_tokens: 150,
       response_format: { type: 'json_object' }
     });
-
     aiResult = JSON.parse(completion.choices[0].message.content);
   } catch (err) {
     console.error('Groq error:', err);
@@ -124,7 +124,10 @@ If chat:
     const search = isUrl ? query : `ytsearch1:${query}`;
 
     const args = [
-      '--cookies', 'cookies.txt',  
+      '--cookies', 'cookies.txt',
+      '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+      '--referer', 'https://www.youtube.com/',
+      '--add-header', 'Accept-Language: en-US,en;q=0.9',
       '-x', '--audio-format', 'mp3',
       '--audio-quality', '5',
       '--no-playlist',
@@ -133,13 +136,24 @@ If chat:
       search
     ];
 
-    // Debug: check if ./yt-dlp exists and is executable
+    // Debug: check cookies.txt content
+    try {
+      const cookiesContent = await fs.readFile('cookies.txt', 'utf8');
+      console.log('Cookies file exists and size:', (await fs.stat('cookies.txt')).size, 'bytes');
+      console.log('Contains SID?', cookiesContent.includes('SID'));
+      console.log('Contains LOGIN_INFO?', cookiesContent.includes('LOGIN_INFO'));
+      console.log('Contains __Secure-3PSID?', cookiesContent.includes('__Secure-3PSID'));
+      console.log('Cookies first 300 chars (for debug):', cookiesContent.substring(0, 300));
+    } catch (err) {
+      console.log('Error reading cookies.txt:', err.message);
+    }
+
+    // Debug: check yt-dlp
     console.log('Current working directory:', process.cwd());
     console.log('Trying to spawn ./yt-dlp from:', __dirname);
     try {
       await fs.access(path.join(__dirname, 'yt-dlp'));
       console.log('yt-dlp binary found in project root!');
-      // Check file mode (should be 100755 or similar for executable)
       const stats = await fs.stat(path.join(__dirname, 'yt-dlp'));
       console.log('yt-dlp file mode:', stats.mode.toString(8));
     } catch (err) {
@@ -147,6 +161,7 @@ If chat:
     }
 
     const yt = spawn('./yt-dlp', args);
+
     let output = '';
     let errorOutput = '';
 
@@ -176,13 +191,11 @@ If chat:
       const filePath = match[1];
       const fileName = path.basename(filePath);
       const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-
       res.write(`data: ${JSON.stringify({
         status: 'success',
         message: 'Song ready! 🎧',
         downloadUrl: `${baseUrl}/api/file/${encodeURIComponent(fileName)}`
       })}\n\n`);
-
       res.flushHeaders();
       res.end();
     });
