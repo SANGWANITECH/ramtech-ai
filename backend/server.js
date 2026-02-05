@@ -14,7 +14,7 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-// Allow Netlify domain + localhost for local testing
+// CORS – allow Netlify + localhost
 app.use(cors({
   origin: [
     'https://ram-tech-ai.netlify.app',
@@ -132,7 +132,16 @@ If chat:
       search
     ];
 
-    const yt = spawn('yt-dlp', args);
+    // Debug: check if yt-dlp exists
+    console.log('Trying to spawn ./yt-dlp from directory:', __dirname);
+    try {
+      await fs.access(path.join(__dirname, 'yt-dlp'));
+      console.log('yt-dlp binary found!');
+    } catch {
+      console.log('yt-dlp binary NOT found in project root!');
+    }
+
+    const yt = spawn('./yt-dlp', args);
     let output = '';
     let errorOutput = '';
 
