@@ -132,13 +132,17 @@ If chat:
       search
     ];
 
-    // Debug: check if yt-dlp exists
-    console.log('Trying to spawn ./yt-dlp from directory:', __dirname);
+    // Debug: check if ./yt-dlp exists and is executable
+    console.log('Current working directory:', process.cwd());
+    console.log('Trying to spawn ./yt-dlp from:', __dirname);
     try {
       await fs.access(path.join(__dirname, 'yt-dlp'));
-      console.log('yt-dlp binary found!');
-    } catch {
-      console.log('yt-dlp binary NOT found in project root!');
+      console.log('yt-dlp binary found in project root!');
+      // Check if it's executable (mode 755 or similar)
+      const stats = await fs.stat(path.join(__dirname, 'yt-dlp'));
+      console.log('yt-dlp file mode:', stats.mode.toString(8));
+    } catch (err) {
+      console.log('yt-dlp binary NOT found or not accessible:', err.message);
     }
 
     const yt = spawn('./yt-dlp', args);
@@ -154,7 +158,7 @@ If chat:
       console.log('Errors:', errorOutput);
 
       if (code !== 0) {
-        res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download failed – tool error 😔' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download failed – tool error 😔 (exit code ' + code + ')' })}\n\n`);
         res.flushHeaders();
         res.end();
         return;
@@ -183,8 +187,8 @@ If chat:
     });
 
     yt.on('error', err => {
-      console.error('Spawn error:', err);
-      res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download tool not available 😅' })}\n\n`);
+      console.error('Spawn error:', err.message);
+      res.write(`data: ${JSON.stringify({ status: 'error', message: 'Download tool not available 😅 (' + err.message + ')' })}\n\n`);
       res.flushHeaders();
       res.end();
     });
